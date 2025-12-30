@@ -1,0 +1,29 @@
+# Obsidian PA - Personal Assistant with Obsidian + Telegram + Claude
+# https://github.com/your-username/obsidian-pa
+
+services:
+  obsidian-brain:
+    build: .
+    container_name: obsidian-pa
+    environment:
+      # LinuxServer.io container settings
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Singapore
+      # Application settings (loaded from .env file)
+      - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - ALLOWED_TELEGRAM_USER_ID=${ALLOWED_TELEGRAM_USER_ID}
+      # Optional: Override vault path (defaults to /config/Obsidian Vault)
+      - VAULT_PATH=${VAULT_PATH}
+    volumes:
+      # Persistent storage for Obsidian vault and settings
+      - ./obsidian_data:/config
+    ports:
+      # KasmVNC web desktop for initial setup
+      - "3000:3000"
+    restart: unless-stopped
+    # Memory limit to prevent runaway processes
+    mem_limit: 4g
+    # Shared memory for Electron/Chromium apps (Obsidian)
+    shm_size: 1g
