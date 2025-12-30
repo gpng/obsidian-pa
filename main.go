@@ -142,6 +142,7 @@ func executeClaude(prompt, apiKey, vaultPath, sessionID string) (string, string)
 		"--dangerously-skip-permissions",
 		"--add-dir", vaultPath,
 		"--output-format", "json",
+		"--model", "claude-haiku-4-5",
 	}
 
 	// Resume session if we have one
@@ -203,12 +204,20 @@ func sendResponse(bot *tgbotapi.BotAPI, chatID int64, response string) {
 		}
 
 		msg := tgbotapi.NewMessage(chatID, chunk)
-		if _, err := bot.Send(msg); err != nil {
-			log.Printf("Failed to send response: %v", err)
-			// Send error notification to chat
-			errMsg := tgbotapi.NewMessage(chatID, fmt.Sprintf("❌ Failed to send response: %v", err))
-			bot.Send(errMsg)
-			return
+		msg.ParseMode = "Markdown" // Enable Markdown rendering
+
+		_, err := bot.Send(msg)
+		if err != nil {
+			// If Markdown parsing fails, try again without it
+			log.Printf("Failed to send with Markdown, retrying as plain text: %v", err)
+			msg.ParseMode = ""
+			if _, err := bot.Send(msg); err != nil {
+				log.Printf("Failed to send response: %v", err)
+				errMsg := tgbotapi.NewMessage(chatID, fmt.Sprintf("❌ Failed to send response: %v", err))
+				bot.Send(errMsg)
+				return
+			}
 		}
 	}
 }
+
