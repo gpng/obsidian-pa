@@ -1,34 +1,36 @@
-# Deployment Guide - DigitalOcean
+# Deployment Guide - Hetzner
 
-This guide covers deploying Obsidian PA to a DigitalOcean Droplet.
+This guide covers deploying Obsidian PA to a Hetzner Cloud Server.
 
 ## Prerequisites
 
-- DigitalOcean account
-- SSH key added to DigitalOcean
+- Hetzner Cloud account
+- SSH key added to Hetzner
 - Telegram bot token (from @BotFather)
 - Anthropic API key
 - Your Telegram user ID (from @userinfobot)
 - Obsidian Sync subscription
 
-## 1. Create Droplet
+## 1. Create Server
 
-1. Go to [DigitalOcean Control Panel](https://cloud.digitalocean.com/)
-2. Create → Droplets
-3. Choose:
-   - **Region**: Closest to you
-   - **Image**: Ubuntu 24.04 LTS
-   - **Size**: Basic → Regular → $12/mo (2GB RAM, 1 vCPU)
-   - **Authentication**: SSH Key
-4. Click "Create Droplet"
-5. Note the IP address
+1. Go to [Hetzner Cloud Console](https://console.hetzner.cloud/)
+2. Create a new project (or select existing)
+3. Click **Add Server**
+4. Choose:
+   - **Location**: Closest to you (e.g., Nuremberg, Helsinki)
+   - **Image**: Ubuntu 24.04
+   - **Type**: CX22 (2 vCPU, 4GB RAM, €4.35/mo) or CAX11 (ARM, €3.79/mo)
+   - **Networking**: ✅ **Enable IPv4** (required for SSH and Telegram API)
+   - **SSH Keys**: Select your SSH key
+5. Click **Create & Buy Now**
+6. Note the IPv4 address
 
 ## 2. Initial Server Setup
 
-SSH into your droplet:
+SSH into your server:
 
 ```bash
-ssh root@YOUR_DROPLET_IP
+ssh root@YOUR_SERVER_IP
 ```
 
 ### Install Docker
@@ -37,11 +39,11 @@ ssh root@YOUR_DROPLET_IP
 # Update system
 apt update && apt upgrade -y
 
+# Install dependencies
+apt install -y make git
+
 # Install Docker
 curl -fsSL https://get.docker.com | sh
-
-# Install Docker Compose plugin
-apt install docker-compose-plugin -y
 
 # Verify installation
 docker --version
@@ -119,26 +121,15 @@ docker compose logs -f
 
 This is a **one-time manual step** to authenticate with Obsidian Sync.
 
-### Option A: SSH Tunnel (Recommended - More Secure)
+### SSH Tunnel (Recommended)
 
 From your **local machine**:
 
 ```bash
-ssh -L 3000:localhost:3000 obsidian@YOUR_DROPLET_IP
+ssh -L 3000:localhost:3000 obsidian@YOUR_SERVER_IP
 ```
 
 Then open `http://localhost:3000` in your browser.
-
-### Option B: Temporary Firewall Opening
-
-```bash
-# On the droplet
-ufw allow 3000/tcp
-```
-
-Open `http://YOUR_DROPLET_IP:3000` in your browser.
-
-> ⚠️ Remember to close this port after setup!
 
 ### Web Desktop Login
 
@@ -164,27 +155,22 @@ Open `http://YOUR_DROPLET_IP:3000` in your browser.
 
 ### Close Web Desktop
 
-After successful sync setup:
-
-1. Close the browser tab
-2. If you opened port 3000 in firewall, close it:
-   ```bash
-   ufw delete allow 3000/tcp
-   ```
+After successful sync setup, just close the browser tab.
 
 ## 5. Firewall Configuration
 
+Hetzner has a cloud firewall. Configure it in the console:
+
+1. Go to **Firewalls** → **Create Firewall**
+2. Add rules:
+   - **SSH**: TCP port 22, source 0.0.0.0/0
+3. Apply to your server
+
+Or use UFW on the server:
+
 ```bash
-# Enable UFW
 ufw enable
-
-# Allow SSH
 ufw allow 22/tcp
-
-# Allow port 3000 only if you need web access
-# ufw allow 3000/tcp
-
-# Check status
 ufw status
 ```
 
@@ -205,20 +191,22 @@ ufw status
 ### View logs
 
 ```bash
+make logs
+# or
 docker compose logs -f
 ```
 
 ### Restart services
 
 ```bash
-docker compose restart
+make restart
 ```
 
 ### Update to latest version
 
 ```bash
 git pull
-docker compose up -d --build
+make up
 ```
 
 ### Check disk usage
@@ -237,7 +225,7 @@ The vault data is stored in `~/obsidian-pa/obsidian_data/`. Back this up periodi
 tar -czf obsidian-backup-$(date +%Y%m%d).tar.gz obsidian_data/
 
 # Copy to local machine (run from local)
-scp obsidian@YOUR_DROPLET_IP:~/obsidian-pa/obsidian-backup-*.tar.gz ./
+scp obsidian@YOUR_SERVER_IP:~/obsidian-pa/obsidian-backup-*.tar.gz ./
 ```
 
 ## Troubleshooting
@@ -249,7 +237,7 @@ scp obsidian@YOUR_DROPLET_IP:~/obsidian-pa/obsidian-backup-*.tar.gz ./
 docker compose ps
 
 # Check logs for errors
-docker compose logs telegram-bot
+make logs
 
 # Verify environment variables are set
 docker compose exec obsidian-brain env | grep -E "TELEGRAM|ANTHROPIC|ALLOWED"
@@ -281,7 +269,8 @@ echo '/swapfile none swap sw 0 0' >> /etc/fstab
 
 | Resource | Monthly Cost |
 |----------|--------------|
-| DigitalOcean Droplet (2GB) | $12 |
+| Hetzner CX22 (4GB RAM) | €4.35 |
+| IPv4 address | €0.50 |
 | Obsidian Sync | $4 |
-| Anthropic API | Variable (pay per use) |
-| **Total** | ~$16 + API usage |
+| Anthropic API | Variable |
+| **Total** | ~€5 + $4 + API usage |

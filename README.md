@@ -186,9 +186,9 @@ obsidian-pa/
 
 ## Deployment
 
-### VPS Deployment (DigitalOcean)
+### VPS Deployment (Hetzner)
 
-See [docs/deployment-digitalocean.md](docs/deployment-digitalocean.md) for a complete step-by-step guide covering:
+See [docs/deployment-hetzner.md](docs/deployment-hetzner.md) for a complete step-by-step guide covering:
 
 - Droplet creation and Docker setup
 - Environment variable configuration

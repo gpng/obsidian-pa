@@ -108,6 +108,48 @@ func main() {
 			continue
 		}
 
+		// Handle /start command - Read CLAUDE.md and start daily review
+		if userMsg == "/start" {
+			// Reset session for a fresh start
+			sessionID = ""
+			log.Println("Starting new session with CLAUDE.md context")
+
+			// Send processing indicator
+			processingMsg := tgbotapi.NewMessage(chatID, "🌅 Starting your day... Reading context and reviewing tasks...")
+			sentMsg, err := bot.Send(processingMsg)
+			if err != nil {
+				log.Printf("Failed to send processing message: %v", err)
+			}
+
+			// Execute Claude CLI with the start prompt
+			startPrompt := `Read the CLAUDE.md file to understand your role and the project context.
+
+Then, help me start my day by:
+1. Reviewing any tasks or to-do items in the vault
+2. Checking for recent notes or updates
+3. Suggesting what I should focus on today
+
+Provide a concise daily briefing.`
+
+			response, newSessionID := executeClaude(startPrompt, anthropicKey, vaultPath, sessionID)
+
+			// Update session ID
+			if newSessionID != "" {
+				sessionID = newSessionID
+				log.Printf("New session started: %s", sessionID)
+			}
+
+			// Delete processing message
+			if err == nil {
+				deleteMsg := tgbotapi.NewDeleteMessage(chatID, sentMsg.MessageID)
+				bot.Request(deleteMsg)
+			}
+
+			// Send response
+			sendResponse(bot, chatID, response)
+			continue
+		}
+
 		// Send processing indicator
 		processingMsg := tgbotapi.NewMessage(chatID, "🧠 Processing...")
 		sentMsg, err := bot.Send(processingMsg)
