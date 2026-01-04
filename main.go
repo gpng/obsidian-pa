@@ -17,6 +17,9 @@ import (
 // DefaultVaultPath is the default path to the Obsidian vault in the container
 const DefaultVaultPath = "/config/Obsidian Vault"
 
+// DefaultClaudeModel is the default Claude model to use
+const DefaultClaudeModel = "claude-haiku-4-5"
+
 // ClaudeResponse represents the JSON response from Claude CLI
 type ClaudeResponse struct {
 	SessionID string `json:"session_id"`
@@ -31,6 +34,10 @@ func main() {
 	vaultPath := os.Getenv("VAULT_PATH")
 	if vaultPath == "" {
 		vaultPath = DefaultVaultPath
+	}
+	claudeModel := os.Getenv("CLAUDE_MODEL")
+	if claudeModel == "" {
+		claudeModel = DefaultClaudeModel
 	}
 
 	if telegramToken == "" {
@@ -131,7 +138,7 @@ Then, help me start my day by:
 
 Provide a concise daily briefing.`
 
-			response, newSessionID := executeClaude(startPrompt, anthropicKey, vaultPath, sessionID)
+			response, newSessionID := executeClaude(startPrompt, anthropicKey, vaultPath, claudeModel, sessionID)
 
 			// Update session ID
 			if newSessionID != "" {
@@ -158,7 +165,7 @@ Provide a concise daily briefing.`
 		}
 
 		// Execute Claude CLI
-		response, newSessionID := executeClaude(userMsg, anthropicKey, vaultPath, sessionID)
+		response, newSessionID := executeClaude(userMsg, anthropicKey, vaultPath, claudeModel, sessionID)
 
 		// Update session ID if we got a new one
 		if newSessionID != "" {
@@ -178,13 +185,13 @@ Provide a concise daily briefing.`
 }
 
 // executeClaude runs the Claude CLI with the given prompt and returns the output and session ID
-func executeClaude(prompt, apiKey, vaultPath, sessionID string) (string, string) {
+func executeClaude(prompt, apiKey, vaultPath, model, sessionID string) (string, string) {
 	args := []string{
 		"-p", prompt,
 		"--dangerously-skip-permissions",
 		"--add-dir", vaultPath,
 		"--output-format", "json",
-		"--model", "claude-haiku-4-5",
+		"--model", model,
 	}
 
 	// Resume session if we have one

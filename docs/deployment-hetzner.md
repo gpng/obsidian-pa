@@ -84,6 +84,8 @@ Fill in your credentials:
 TELEGRAM_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
 ANTHROPIC_API_KEY=sk-ant-api03-xxxxx
 ALLOWED_TELEGRAM_USER_ID=123456789
+# Optional: Customize Claude model (default: claude-haiku-4-5)
+# CLAUDE_MODEL=claude-sonnet-4-20250514
 ```
 
 Save and exit (Ctrl+X, Y, Enter).

@@ -90,6 +90,7 @@ The bot will respond with the result, and the note will appear in your Obsidian 
 | `ANTHROPIC_API_KEY` | Yes | Anthropic API key from console.anthropic.com |
 | `ALLOWED_TELEGRAM_USER_ID` | Yes | Your Telegram user ID (numbers only) |
 | `VAULT_PATH` | No | Custom vault path (default: `/config/Obsidian Vault`) |
+| `CLAUDE_MODEL` | No | Claude model to use (default: `claude-haiku-4-5`) |
 
 ### Customizing Claude's Behavior
 
