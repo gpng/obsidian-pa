@@ -2,6 +2,8 @@
 
 This guide walks you through creating a Telegram bot for Obsidian PA.
 
+> **Note:** Telegram is optional. You can also use [Slack](slack-setup.md) instead, or enable both platforms simultaneously.
+
 ## Prerequisites
 
 - A Telegram account

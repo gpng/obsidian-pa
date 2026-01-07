@@ -2,7 +2,7 @@
 
 ## Overview
 
-Obsidian PA is a headless personal assistant that manages your Obsidian vault through Telegram messages. It uses Claude AI via the Claude Code CLI to perform intelligent operations on your markdown files.
+Obsidian PA is a headless personal assistant that manages your Obsidian vault through messaging platforms (Telegram and/or Slack). It uses Claude AI via the Claude Code CLI to perform intelligent operations on your markdown files.
 
 ## Architecture Diagram
 
@@ -10,7 +10,7 @@ Obsidian PA is a headless personal assistant that manages your Obsidian vault th
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                              User Devices                                    │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
-│  │   iPhone    │  │   Android   │  │   Laptop    │  │   Telegram App      │ │
+│  │   iPhone    │  │   Android   │  │   Laptop    │  │ Telegram / Slack    │ │
 │  │  Obsidian   │  │  Obsidian   │  │  Obsidian   │  │   (Control)         │ │
 │  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └──────────┬──────────┘ │
 └─────────┼────────────────┼────────────────┼────────────────────┼────────────┘
@@ -18,8 +18,8 @@ Obsidian PA is a headless personal assistant that manages your Obsidian vault th
           └────────────────┼────────────────┘                    │
                            │                                     │
                   ┌────────▼────────┐                   ┌────────▼────────┐
-                  │  Obsidian Sync  │                   │   Telegram API  │
-                  │   (Cloud)       │                   │   (Cloud)       │
+                  │  Obsidian Sync  │                   │ Telegram / Slack│
+                  │   (Cloud)       │                   │      API        │
                   └────────┬────────┘                   └────────┬────────┘
                            │                                     │
                            │                                     │
@@ -34,8 +34,8 @@ Obsidian PA is a headless personal assistant that manages your Obsidian vault th
 │  │  │   (KasmVNC)      │    │   (Bridge)       │    │   (Brain)        │ │  │
 │  │  │                  │    │                  │    │                  │ │  │
 │  │  │  - Sync Client   │    │  - Listen TG     │    │  - Read files    │ │  │
-│  │  │  - Plugin Host   │    │  - Auth user     │    │  - Write files   │ │  │
-│  │  │  - Desktop UI    │    │  - Exec Claude   │    │  - Run tasks     │ │  │
+│  │  │  - Plugin Host   │    │  - Listen Slack  │    │  - Write files   │ │  │
+│  │  │  - Desktop UI    │    │  - Auth user     │    │  - Run tasks     │ │  │
 │  │  └────────┬─────────┘    └────────┬─────────┘    └────────┬─────────┘ │  │
 │  │           │                       │                       │           │  │
 │  │           └───────────────────────┼───────────────────────┘           │  │
@@ -53,25 +53,27 @@ Obsidian PA is a headless personal assistant that manages your Obsidian vault th
 │                                                                              │
 │  S6 Overlay (Process Manager)                                               │
 │  ├── init-services (container startup)                                      │
-│  └── telegram-bot (longrun service)                                         │
+│  └── telegram-bot (longrun service - handles both Telegram & Slack)         │
 │                                                                              │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Components
 
-### 1. Telegram Bot (Go)
+### 1. Messaging Bot (Go)
 
-**File:** `main.go`
+**Files:** `main.go`, `telegram.go`, `slack.go`, `claude.go`
 
-The bridge between Telegram and Claude. Responsibilities:
+The bridge between messaging platforms and Claude. Supports Telegram and Slack (Socket Mode).
 
-- Connects to Telegram Bot API using long polling
-- Authenticates incoming messages (single user only)
+**Responsibilities:**
+- Connects to Telegram Bot API (long polling) and/or Slack (Socket Mode)
+- Authenticates incoming messages (single user per platform)
 - Forwards user messages to Claude CLI
-- Returns Claude's responses to Telegram
+- Returns Claude's responses to the messaging platform
 - Handles errors by sending them to the chat
-- Splits long messages to fit Telegram's 4096 char limit
+- Splits long messages (4096 chars for Telegram, 4000 for Slack readability)
+- Maintains separate conversation sessions per platform
 
 ### 2. Claude CLI
 
@@ -110,10 +112,10 @@ Manages service lifecycle in the container:
 ### Sending a Command
 
 ```
-1. User sends message via Telegram
-   └─▶ Telegram API
+1. User sends message via Telegram or Slack DM
+   └─▶ Platform API (Telegram / Slack Socket Mode)
        └─▶ Go Bot receives update
-           └─▶ Validates user ID
+           └─▶ Validates user ID (per platform)
                └─▶ Sends "Processing..." indicator
                    └─▶ Executes Claude CLI with message
                        └─▶ Claude reads/modifies vault
@@ -134,7 +136,9 @@ Manages service lifecycle in the container:
 
 ### Authentication
 
-- Single authorized user via `ALLOWED_TELEGRAM_USER_ID`
+- Single authorized user per platform:
+  - Telegram: `ALLOWED_TELEGRAM_USER_ID` (integer)
+  - Slack: `ALLOWED_SLACK_USER_ID` (string, e.g., `U0123456789`)
 - Unauthorized messages are silently dropped
 - User ID is verified for every message
 
@@ -167,14 +171,32 @@ Manages service lifecycle in the container:
 
 ## Environment Variables
 
+### Shared
+
 | Variable | Used By | Purpose |
-|----------|---------|---------|
-| `TELEGRAM_TOKEN` | Go Bot | Telegram API authentication |
-| `ANTHROPIC_API_KEY` | Claude CLI | Anthropic API authentication |
-| `ALLOWED_TELEGRAM_USER_ID` | Go Bot | User authorization |
+|----------|---------|----------|
+| `ANTHROPIC_API_KEY` | Claude CLI | Anthropic API authentication (required) |
 | `VAULT_PATH` | Go Bot | Custom vault path (default: `/config/Obsidian Vault`) |
+| `CLAUDE_MODEL` | Go Bot | Claude model to use (default: `claude-haiku-4-5`) |
 | `PUID`, `PGID` | LinuxServer | File permissions |
 | `TZ` | Container | Timezone |
+
+### Telegram (optional)
+
+| Variable | Used By | Purpose |
+|----------|---------|----------|
+| `TELEGRAM_TOKEN` | Go Bot | Telegram Bot API token from @BotFather |
+| `ALLOWED_TELEGRAM_USER_ID` | Go Bot | Authorized Telegram user ID (integer) |
+
+### Slack (optional)
+
+| Variable | Used By | Purpose |
+|----------|---------|----------|
+| `SLACK_APP_TOKEN` | Go Bot | Slack App-Level token for Socket Mode (`xapp-...`) |
+| `SLACK_BOT_TOKEN` | Go Bot | Slack Bot OAuth token (`xoxb-...`) |
+| `ALLOWED_SLACK_USER_ID` | Go Bot | Authorized Slack user ID (e.g., `U0123456789`) |
+
+> **Note:** At least one platform (Telegram or Slack) must be configured. Both can be enabled simultaneously.
 
 ## CLAUDE.md Configuration
 
