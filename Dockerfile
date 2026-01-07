@@ -4,11 +4,12 @@
 FROM lscr.io/linuxserver/obsidian:latest
 
 # Install build dependencies (Debian-based image)
-# nodejs from nodesource repository (pre-configured in base image) includes npm
 RUN apt-get update && apt-get install -y --no-install-recommends \
     golang-go \
     nodejs \
+    npm \
     ca-certificates \
+    && update-ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Claude Code CLI globally

@@ -84,13 +84,44 @@ The bot will respond with the result, and the note will appear in your Obsidian 
 
 ### Environment Variables
 
+#### Shared (Required)
+
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `TELEGRAM_TOKEN` | Yes | Bot token from @BotFather |
 | `ANTHROPIC_API_KEY` | Yes | Anthropic API key from console.anthropic.com |
-| `ALLOWED_TELEGRAM_USER_ID` | Yes | Your Telegram user ID (numbers only) |
 | `VAULT_PATH` | No | Custom vault path (default: `/config/Obsidian Vault`) |
 | `CLAUDE_MODEL` | No | Claude model to use (default: `claude-haiku-4-5`) |
+
+#### Telegram (Optional)
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `TELEGRAM_TOKEN` | If using Telegram | Bot token from @BotFather |
+| `ALLOWED_TELEGRAM_USER_ID` | If using Telegram | Your Telegram user ID (numbers only) |
+
+#### Slack (Optional)
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `SLACK_APP_TOKEN` | If using Slack | App-level token (starts with `xapp-`) |
+| `SLACK_BOT_TOKEN` | If using Slack | Bot OAuth token (starts with `xoxb-`) |
+| `ALLOWED_SLACK_USER_ID` | If using Slack | Your Slack user ID (e.g., `U0123456789`) |
+
+> **Note:** At least one platform (Telegram or Slack) must be configured. You can enable both simultaneously.
+
+### Setting Up Slack
+
+1. Go to [api.slack.com/apps](https://api.slack.com/apps) and create a new app
+2. Under **Socket Mode**, enable it and create an App-Level Token with `connections:write` scope (save as `SLACK_APP_TOKEN`)
+3. Under **OAuth & Permissions**, add these Bot Token Scopes:
+   - `chat:write` - Send messages
+   - `im:read` - Read DM content
+   - `im:write` - Send DMs  
+   - `im:history` - Access DM history
+4. Install the app to your workspace and save the Bot User OAuth Token as `SLACK_BOT_TOKEN`
+5. Under **Event Subscriptions**, enable events and subscribe to `message.im` bot event
+6. Find your Slack user ID (click your profile → "..." → "Copy member ID") and save as `ALLOWED_SLACK_USER_ID`
+7. DM your bot to start using it!
 
 ### Customizing Claude's Behavior
 
@@ -125,14 +156,14 @@ See [docs/architecture.md](docs/architecture.md) for detailed system architectur
 
 ```
 ┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-│  Telegram   │────▶│   Go Bot     │────▶│ Claude CLI  │
-│    App      │◀────│   (Bridge)   │◀────│   (Brain)   │
-└─────────────┘     └──────────────┘     └─────────────┘
-                            │                    │
-                            │              ┌─────▼─────┐
-                            │              │  Obsidian │
-                            │              │   Vault   │
-                            │              └─────┬─────┘
+│  Telegram   │────▶│             │────▶│ Claude CLI  │
+│    App      │◀────│   Go Bot     │◀────│   (Brain)   │
+└─────────────┘     │   (Bridge)   │     └─────────────┘
+                    │              │            │
+┌─────────────┐     │              │      ┌─────▼─────┐
+│    Slack    │────▶│              │      │  Obsidian │
+│    App      │◀────│              │      │   Vault   │
+└─────────────┘     └──────────────┘      └─────┬─────┘
                             │                    │
                     ┌───────▼────────────────────▼───────┐
                     │           Docker Container          │
