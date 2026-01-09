@@ -14,6 +14,10 @@ services:
       - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - ALLOWED_TELEGRAM_USER_ID=${ALLOWED_TELEGRAM_USER_ID}
+      # Slack bot settings (optional, Socket Mode)
+      - SLACK_APP_TOKEN=${SLACK_APP_TOKEN}
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
+      - ALLOWED_SLACK_USER_ID=${ALLOWED_SLACK_USER_ID}
       # Optional: Override vault path (defaults to /config/Obsidian Vault)
       - VAULT_PATH=${VAULT_PATH}
     volumes:

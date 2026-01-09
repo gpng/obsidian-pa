@@ -27,10 +27,10 @@ Use the official LinuxServer.io Obsidian Docker image which runs the full Obsidi
 
 ---
 
-## Why Go for the Telegram Bot?
+## Why Go for the Messaging Bot?
 
 ### Decision
-Implement the Telegram-to-Claude bridge in Go.
+Implement the messaging-to-Claude bridge in Go.
 
 ### Rationale
 
@@ -42,7 +42,8 @@ Implement the Telegram-to-Claude bridge in Go.
 **Why Go:**
 - **Single Binary**: Easy to deploy, no runtime dependencies
 - **Low Resource Usage**: Minimal memory footprint
-- **Excellent Telegram Libraries**: `telegram-bot-api` is mature and well-maintained
+- **Excellent Libraries**: `telegram-bot-api` and `slack-go/slack` are mature
+- **Concurrency**: Easy to run multiple platform listeners in goroutines
 - **Strong Typing**: Catches errors at compile time
 - **Fast Startup**: Bot is ready in milliseconds
 
@@ -170,6 +171,7 @@ Use S6 Overlay to manage the Telegram bot as a `longrun` service.
 - **Auto-restart**: Bot restarts if it crashes
 - **Dependencies**: Can wait for other services to start
 - **Logging**: Integrated with container logging
+- **Single Process**: Go bot handles both Telegram and Slack internally
 
 **Trade-offs:**
 - Learning curve for S6 configuration

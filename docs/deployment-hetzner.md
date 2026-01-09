@@ -6,10 +6,11 @@ This guide covers deploying Obsidian PA to a Hetzner Cloud Server.
 
 - Hetzner Cloud account
 - SSH key added to Hetzner
-- Telegram bot token (from @BotFather)
 - Anthropic API key
-- Your Telegram user ID (from @userinfobot)
 - Obsidian Sync subscription
+- **At least one of:**
+  - Telegram bot token (from @BotFather) + your Telegram user ID
+  - Slack app tokens (App-Level + Bot OAuth) + your Slack user ID
 
 ## 1. Create Server
 
@@ -81,9 +82,18 @@ nano .env
 Fill in your credentials:
 
 ```bash
-TELEGRAM_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
+# Required
 ANTHROPIC_API_KEY=sk-ant-api03-xxxxx
+
+# Telegram (optional - provide both to enable)
+TELEGRAM_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
 ALLOWED_TELEGRAM_USER_ID=123456789
+
+# Slack (optional - provide all three to enable)
+# SLACK_APP_TOKEN=xapp-1-...
+# SLACK_BOT_TOKEN=xoxb-...
+# ALLOWED_SLACK_USER_ID=U0ABC123DEF
+
 # Optional: Customize Claude model (default: claude-haiku-4-5)
 # CLAUDE_MODEL=claude-sonnet-4-20250514
 ```
@@ -178,8 +188,10 @@ ufw status
 
 ## 6. Test the Bot
 
-1. Open Telegram
-2. Find your bot (search by username)
+1. Open Telegram or Slack (whichever you configured)
+2. Find your bot:
+   - **Telegram**: Search by bot username
+   - **Slack**: Start a DM with the bot
 3. Send a message:
    ```
    List all files in my vault
@@ -242,7 +254,7 @@ docker compose ps
 make logs
 
 # Verify environment variables are set
-docker compose exec obsidian-brain env | grep -E "TELEGRAM|ANTHROPIC|ALLOWED"
+docker compose exec obsidian-brain env | grep -E "TELEGRAM|SLACK|ANTHROPIC|ALLOWED"
 ```
 
 ### Obsidian not syncing
