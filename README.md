@@ -111,16 +111,15 @@ The bot will respond with the result, and the note will appear in your Obsidian 
 
 ### Setting Up Slack
 
+See [docs/slack-setup.md](docs/slack-setup.md) for detailed instructions.
+
+Quick summary:
 1. Go to [api.slack.com/apps](https://api.slack.com/apps) and create a new app
-2. Under **Socket Mode**, enable it and create an App-Level Token with `connections:write` scope (save as `SLACK_APP_TOKEN`)
-3. Under **OAuth & Permissions**, add these Bot Token Scopes:
-   - `chat:write` - Send messages
-   - `im:read` - Read DM content
-   - `im:write` - Send DMs  
-   - `im:history` - Access DM history
-4. Install the app to your workspace and save the Bot User OAuth Token as `SLACK_BOT_TOKEN`
-5. Under **Event Subscriptions**, enable events and subscribe to `message.im` bot event
-6. Find your Slack user ID (click your profile → "..." → "Copy member ID") and save as `ALLOWED_SLACK_USER_ID`
+2. Enable **Socket Mode** and create an App-Level Token (`xapp-`) → `SLACK_APP_TOKEN`
+3. Add **OAuth scopes**: `chat:write`, `im:history`
+4. Install app and copy Bot Token (`xoxb-`) → `SLACK_BOT_TOKEN`
+5. Enable **Event Subscriptions** and subscribe to `message.im`
+6. Copy your member ID from Slack profile → `ALLOWED_SLACK_USER_ID`
 7. DM your bot to start using it!
 
 ### Customizing Claude's Behavior
@@ -192,14 +191,18 @@ mise install
 go test ./...
 
 # Build locally
-go build -o bot .
+go build -o bot ./src
 ```
 
 ### Project Structure
 
 ```
 obsidian-pa/
-├── main.go              # Telegram bot implementation
+├── src/                 # Go source files
+│   ├── main.go          # Application entry point
+│   ├── claude.go        # Claude CLI execution logic
+│   ├── telegram.go      # Telegram bot implementation
+│   └── slack.go         # Slack bot implementation
 ├── go.mod               # Go module definition
 ├── go.sum               # Dependency checksums
 ├── vendor/              # Vendored dependencies
@@ -211,6 +214,7 @@ obsidian-pa/
 ├── docs/                # Documentation
 │   ├── architecture.md
 │   ├── design-decisions.md
+│   ├── slack-setup.md
 │   └── telegram-bot-setup.md
 └── root/                # S6 overlay service files
     └── etc/s6-overlay/...

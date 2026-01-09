@@ -62,7 +62,7 @@ Obsidian PA is a headless personal assistant that manages your Obsidian vault th
 
 ### 1. Messaging Bot (Go)
 
-**Files:** `main.go`, `telegram.go`, `slack.go`, `claude.go`
+**Files:** `src/main.go`, `src/telegram.go`, `src/slack.go`, `src/claude.go`
 
 The bridge between messaging platforms and Claude. Supports Telegram and Slack (Socket Mode).
 
