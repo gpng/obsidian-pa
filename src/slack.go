@@ -6,6 +6,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/gpng/obsidian-pa/src/executor"
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slackevents"
 	"github.com/slack-go/slack/socketmode"
@@ -19,7 +20,7 @@ type SlackConfig struct {
 }
 
 // runSlackBot starts the Slack bot using Socket Mode and listens for DM messages
-func runSlackBot(slackConfig *SlackConfig, config *Config) {
+func runSlackBot(slackConfig *SlackConfig, exec executor.Executor) {
 	// Initialize Slack API client
 	api := slack.New(
 		slackConfig.BotToken,
@@ -41,7 +42,7 @@ func runSlackBot(slackConfig *SlackConfig, config *Config) {
 	})
 
 	handler.Handle(socketmode.EventTypeConnected, func(evt *socketmode.Event, c *socketmode.Client) {
-		log.Println("[Slack] Connected to Slack Socket Mode")
+		log.Printf("[Slack] Connected to Slack Socket Mode (using %s)", exec.Name())
 	})
 
 	handler.Handle(socketmode.EventTypeConnectionError, func(evt *socketmode.Event, c *socketmode.Client) {
@@ -119,17 +120,17 @@ func runSlackBot(slackConfig *SlackConfig, config *Config) {
 			return
 		}
 
-		// Handle /start command - Read CLAUDE.md and start daily review
+		// Handle /start command - Read context and start daily review
 		if userMsg == "/start" || userMsg == "start" {
 			// Reset session for a fresh start
 			sessionID = ""
-			log.Println("[Slack] Starting new session with CLAUDE.md context")
+			log.Printf("[Slack] Starting new session with %s context", exec.Name())
 
 			// Send processing indicator
 			processingTs := sendSlackMessage(api, channelID, "🌅 Starting your day... Reading context and reviewing tasks...")
 
-			// Execute Claude CLI with the start prompt
-			response, newSessionID := executeClaude(getStartPrompt(), config, sessionID)
+			// Execute AI CLI with the start prompt
+			response, newSessionID := exec.Execute(exec.GetStartPrompt(), sessionID)
 
 			// Update session ID
 			if newSessionID != "" {
@@ -150,8 +151,8 @@ func runSlackBot(slackConfig *SlackConfig, config *Config) {
 		// Send processing indicator
 		processingTs := sendSlackMessage(api, channelID, "🧠 Processing...")
 
-		// Execute Claude CLI
-		response, newSessionID := executeClaude(userMsg, config, sessionID)
+		// Execute AI CLI
+		response, newSessionID := exec.Execute(userMsg, sessionID)
 
 		// Update session ID if we got a new one
 		if newSessionID != "" {

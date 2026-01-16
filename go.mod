@@ -1,4 +1,4 @@
-module obsidian-pa
+module github.com/gpng/obsidian-pa
 
 go 1.22.4
 

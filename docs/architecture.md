@@ -2,7 +2,7 @@
 
 ## Overview
 
-Obsidian PA is a headless personal assistant that manages your Obsidian vault through messaging platforms (Telegram and/or Slack). It uses Claude AI via the Claude Code CLI to perform intelligent operations on your markdown files.
+Obsidian PA is a headless personal assistant that manages your Obsidian vault through messaging platforms (Telegram and/or Slack). It uses AI CLI tools (Claude Code or Gemini CLI) to perform intelligent operations on your markdown files.
 
 ## Architecture Diagram
 
@@ -31,7 +31,7 @@ Obsidian PA is a headless personal assistant that manages your Obsidian vault th
 │  │                                                                        │  │
 │  │  ┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐ │  │
 │  │  │   Obsidian App   │    │     Go Bot       │    │   Claude CLI     │ │  │
-│  │  │   (KasmVNC)      │    │   (Bridge)       │    │   (Brain)        │ │  │
+│  │  │   (KasmVNC)      │    │   (Bridge)       │    │  (Claude/Gemini) │ │  │
 │  │  │                  │    │                  │    │                  │ │  │
 │  │  │  - Sync Client   │    │  - Listen TG     │    │  - Read files    │ │  │
 │  │  │  - Plugin Host   │    │  - Listen Slack  │    │  - Write files   │ │  │
@@ -62,9 +62,16 @@ Obsidian PA is a headless personal assistant that manages your Obsidian vault th
 
 ### 1. Messaging Bot (Go)
 
-**Files:** `src/main.go`, `src/telegram.go`, `src/slack.go`, `src/claude.go`
+**Files:**
+- `src/main.go` - Entry point, creates executor
+- `src/telegram.go` - Telegram bot handler
+- `src/slack.go` - Slack bot handler
+- `src/executor/` - AI executor package
+  - `executor.go` - Interface definition
+  - `claude.go` - Claude CLI implementation
+  - `gemini.go` - Gemini CLI implementation
 
-The bridge between messaging platforms and Claude. Supports Telegram and Slack (Socket Mode).
+The bridge between messaging platforms and AI CLI. Supports Telegram and Slack (Socket Mode).
 
 **Responsibilities:**
 - Connects to Telegram Bot API (long polling) and/or Slack (Socket Mode)
@@ -75,16 +82,21 @@ The bridge between messaging platforms and Claude. Supports Telegram and Slack (
 - Splits long messages (4096 chars for Telegram, 4000 for Slack readability)
 - Maintains separate conversation sessions per platform
 
-### 2. Claude CLI
+### 2. AI CLI (Claude or Gemini)
 
-**Package:** `@anthropic-ai/claude-code`
+The AI brain. Supports two backends:
 
-The AI brain. Capabilities:
-
+**Claude CLI** (`@anthropic-ai/claude-code`):
 - Reads and writes files in the vault
 - Executes with `--dangerously-skip-permissions` for autonomous operation
-- Uses `CLAUDE.md` for agent configuration
+- Uses `AGENT.md` for agent configuration
 - Has full access to the vault directory
+
+**Gemini CLI** (`@google/gemini-cli`):
+- Reads and writes files in the vault
+- Executes with `--yolo` for autonomous operation
+- Uses `--include-directories` for vault context
+- Supports OAuth or API key authentication
 
 ### 3. Obsidian App
 
@@ -159,7 +171,7 @@ Manages service lifecycle in the container:
 | Path | Purpose |
 |------|---------|
 | `/config` | Obsidian vault and app settings (persistent) |
-| `/app` | Go bot binary and CLAUDE.md |
+| `/app` | Go bot binary and AGENT.md |
 
 ## Ports
 
@@ -175,11 +187,24 @@ Manages service lifecycle in the container:
 
 | Variable | Used By | Purpose |
 |----------|---------|----------|
-| `ANTHROPIC_API_KEY` | Claude CLI | Anthropic API authentication (required) |
+| `AI_EXECUTOR` | Go Bot | Which AI to use: `claude` or `gemini` (default: `claude`) |
 | `VAULT_PATH` | Go Bot | Custom vault path (default: `/config/Obsidian Vault`) |
-| `CLAUDE_MODEL` | Go Bot | Claude model to use (default: `claude-haiku-4-5`) |
 | `PUID`, `PGID` | LinuxServer | File permissions |
 | `TZ` | Container | Timezone |
+
+### Claude (default)
+
+| Variable | Used By | Purpose |
+|----------|---------|----------|
+| `ANTHROPIC_API_KEY` | Claude CLI | Anthropic API authentication (required for Claude) |
+| `CLAUDE_MODEL` | Go Bot | Claude model to use (default: `claude-haiku-4-5`) |
+
+### Gemini
+
+| Variable | Used By | Purpose |
+|----------|---------|----------|
+| `GEMINI_API_KEY` | Gemini CLI | Google API key (optional, can use OAuth) |
+| `GEMINI_MODEL` | Go Bot | Gemini model to use (default: `gemini-2.5-flash`) |
 
 ### Telegram (optional)
 
@@ -198,11 +223,11 @@ Manages service lifecycle in the container:
 
 > **Note:** At least one platform (Telegram or Slack) must be configured. Both can be enabled simultaneously.
 
-## CLAUDE.md Configuration
+## AGENT.md Configuration
 
-Claude CLI automatically looks for a `CLAUDE.md` file in the working directory and parent directories. Place your configuration file in one of these locations:
+Both Claude CLI and Gemini CLI can use an `AGENT.md` file in the working directory for context. Place your configuration file in one of these locations:
 
-1. **In the vault** (syncs with Obsidian Sync): `obsidian_data/<VaultName>/CLAUDE.md`
-2. **In config directory** (parent of vault): `obsidian_data/CLAUDE.md`
+1. **In the vault** (syncs with Obsidian Sync): `obsidian_data/<VaultName>/AGENT.md`
+2. **In config directory** (parent of vault): `obsidian_data/AGENT.md`
 
-The `CLAUDE.md` file customizes Claude's behavior, including vault structure, naming conventions, and task syntax preferences.
+The `AGENT.md` file customizes the AI's behavior, including vault structure, naming conventions, and task syntax preferences.
