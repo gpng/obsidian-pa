@@ -85,10 +85,10 @@ func (g *Gemini) Execute(prompt string, sessionID string) (string, string) {
 }
 
 // parseStreamOutput parses newline-delimited JSON events from Gemini CLI
-// Returns thinking steps and final response with clear visual markers
+// Returns the complete response from the stream
 func parseStreamOutput(output string) (string, string) {
 	var sessionID string
-	var thinkingSteps []string
+	var streamedContent strings.Builder
 	var finalResult string
 
 	scanner := bufio.NewScanner(strings.NewReader(output))
@@ -114,12 +114,12 @@ func parseStreamOutput(output string) (string, string) {
 			// Capture session ID from init event
 			sessionID = event.SessionID
 		case "message":
-			// Collect assistant messages as thinking steps
+			// Concatenate streaming chunks together
 			if event.Role == "assistant" && event.Content != "" {
-				thinkingSteps = append(thinkingSteps, event.Content)
+				streamedContent.WriteString(event.Content)
 			}
 		case "result":
-			// Final result - this is the main response
+			// Final result - this is the complete response
 			if event.Response != "" {
 				finalResult = event.Response
 			}
@@ -135,33 +135,16 @@ func parseStreamOutput(output string) (string, string) {
 		}
 	}
 
-	// Build the response with clear sections
-	var result strings.Builder
-
-	// Add thinking section if there are thinking steps
-	if len(thinkingSteps) > 0 {
-		result.WriteString("🧠 *Thinking:*\n")
-		for _, step := range thinkingSteps {
-			result.WriteString("• ")
-			result.WriteString(step)
-			result.WriteString("\n")
-		}
-		result.WriteString("\n---\n\n")
+	// Prefer the result event's response, fall back to concatenated streamed content
+	result := finalResult
+	if result == "" {
+		result = streamedContent.String()
+	}
+	if result == "" {
+		result = "✅ Done (no output)"
 	}
 
-	// Add final response
-	if finalResult != "" {
-		result.WriteString("📋 *Response:*\n")
-		result.WriteString(finalResult)
-	} else if len(thinkingSteps) > 0 {
-		// If no final result but we have thinking, use last thinking step as response
-		result.WriteString("📋 *Response:*\n")
-		result.WriteString(thinkingSteps[len(thinkingSteps)-1])
-	} else {
-		result.WriteString("✅ Done (no output)")
-	}
-
-	return result.String(), sessionID
+	return result, sessionID
 }
 
 // GetStartPrompt returns the prompt used for the /start command
