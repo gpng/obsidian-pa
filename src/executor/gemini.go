@@ -85,10 +85,10 @@ func (g *Gemini) Execute(prompt string, sessionID string) (string, string) {
 }
 
 // parseStreamOutput parses newline-delimited JSON events from Gemini CLI
-// Returns only the final response, not intermediate chain-of-thought reasoning
+// Returns thinking steps and final response with clear visual markers
 func parseStreamOutput(output string) (string, string) {
 	var sessionID string
-	var lastAssistantMessage string
+	var thinkingSteps []string
 	var finalResult string
 
 	scanner := bufio.NewScanner(strings.NewReader(output))
@@ -109,12 +109,12 @@ func parseStreamOutput(output string) (string, string) {
 			// Capture session ID from init event
 			sessionID = event.SessionID
 		case "message":
-			// Keep track of the last assistant message (final one is usually the response)
+			// Collect assistant messages as thinking steps
 			if event.Role == "assistant" && event.Content != "" {
-				lastAssistantMessage = event.Content
+				thinkingSteps = append(thinkingSteps, event.Content)
 			}
 		case "result":
-			// Final result - this is what we want
+			// Final result - this is the main response
 			if event.Response != "" {
 				finalResult = event.Response
 			}
@@ -130,16 +130,37 @@ func parseStreamOutput(output string) (string, string) {
 		}
 	}
 
-	// Prefer the result event's response, fall back to last assistant message
-	result := finalResult
-	if result == "" {
-		result = lastAssistantMessage
-	}
-	if result == "" {
-		result = "✅ Done (no output)"
+	// Build the response with clear sections
+	var result strings.Builder
+
+	// Add thinking section if there are thinking steps
+	if len(thinkingSteps) > 0 {
+		result.WriteString("🧠 *Thinking:*\n")
+		for _, step := range thinkingSteps {
+			// Truncate long thinking steps for readability
+			if len(step) > 200 {
+				step = step[:200] + "..."
+			}
+			result.WriteString("• ")
+			result.WriteString(step)
+			result.WriteString("\n")
+		}
+		result.WriteString("\n---\n\n")
 	}
 
-	return result, sessionID
+	// Add final response
+	if finalResult != "" {
+		result.WriteString("📋 *Response:*\n")
+		result.WriteString(finalResult)
+	} else if len(thinkingSteps) > 0 {
+		// If no final result but we have thinking, use last thinking step as response
+		result.WriteString("📋 *Response:*\n")
+		result.WriteString(thinkingSteps[len(thinkingSteps)-1])
+	} else {
+		result.WriteString("✅ Done (no output)")
+	}
+
+	return result.String(), sessionID
 }
 
 // GetStartPrompt returns the prompt used for the /start command
