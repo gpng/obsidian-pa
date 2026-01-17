@@ -103,7 +103,7 @@ The bot will respond with the result, and the note will appear in your Obsidian 
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `GEMINI_API_KEY` | No | Google API key (optional, can use OAuth) |
-| `GEMINI_MODEL` | No | Gemini model to use (default: `auto`) |
+| `GEMINI_MODEL` | No | Gemini model to use (default: `auto` - Gemini chooses best model) |
 
 #### Telegram (Optional)
 

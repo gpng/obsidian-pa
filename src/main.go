@@ -17,7 +17,7 @@ const DefaultVaultPath = "/config/Obsidian Vault"
 // DefaultClaudeModel is the default Claude model to use
 const DefaultClaudeModel = "claude-haiku-4-5"
 
-// DefaultGeminiModel is the default Gemini model to use
+// DefaultGeminiModel is the default Gemini model to use (auto = let Gemini CLI choose)
 const DefaultGeminiModel = "auto"
 
 func main() {

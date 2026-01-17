@@ -48,7 +48,11 @@ func (g *Gemini) Execute(prompt string, sessionID string) (string, string) {
 		"--yolo",                                    // Auto-accept all permissions
 		"--include-directories", g.config.VaultPath, // Add vault as context
 		"--output-format", "stream-json",            // Streaming JSON to capture session_id
-		"-m", g.config.Model,
+	}
+
+	// Only pass model flag if not "auto" or empty (let Gemini CLI use its default)
+	if g.config.Model != "" && g.config.Model != "auto" {
+		args = append(args, "-m", g.config.Model)
 	}
 
 	// Resume session if we have one

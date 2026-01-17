@@ -204,7 +204,7 @@ Manages service lifecycle in the container:
 | Variable | Used By | Purpose |
 |----------|---------|----------|
 | `GEMINI_API_KEY` | Gemini CLI | Google API key (optional, can use OAuth) |
-| `GEMINI_MODEL` | Go Bot | Gemini model to use (default: `auto`) |
+| `GEMINI_MODEL` | Go Bot | Gemini model to use (default: `auto` - Gemini chooses best model) |
 
 ### Telegram (optional)
 
