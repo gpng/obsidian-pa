@@ -98,6 +98,11 @@ func parseStreamOutput(output string) (string, string) {
 			continue
 		}
 
+		// Skip non-JSON lines (e.g., "YOLO mode is enabled...", "Loaded cached credentials.")
+		if !strings.HasPrefix(line, "{") {
+			continue
+		}
+
 		var event geminiStreamEvent
 		if err := json.Unmarshal([]byte(line), &event); err != nil {
 			log.Printf("[Gemini] Failed to parse JSON event: %v", err)
