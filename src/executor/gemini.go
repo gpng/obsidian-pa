@@ -142,10 +142,6 @@ func parseStreamOutput(output string) (string, string) {
 	if len(thinkingSteps) > 0 {
 		result.WriteString("🧠 *Thinking:*\n")
 		for _, step := range thinkingSteps {
-			// Truncate long thinking steps for readability
-			if len(step) > 200 {
-				step = step[:200] + "..."
-			}
 			result.WriteString("• ")
 			result.WriteString(step)
 			result.WriteString("\n")
