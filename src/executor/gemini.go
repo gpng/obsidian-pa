@@ -85,10 +85,10 @@ func (g *Gemini) Execute(prompt string, sessionID string) (string, string) {
 }
 
 // parseStreamOutput parses newline-delimited JSON events from Gemini CLI
-// Returns the complete response from the stream
+// Returns thinking steps and final response with clear separation
 func parseStreamOutput(output string) (string, string) {
 	var sessionID string
-	var streamedContent strings.Builder
+	var thinkingSteps []string
 	var finalResult string
 
 	scanner := bufio.NewScanner(strings.NewReader(output))
@@ -114,9 +114,9 @@ func parseStreamOutput(output string) (string, string) {
 			// Capture session ID from init event
 			sessionID = event.SessionID
 		case "message":
-			// Concatenate streaming chunks together
+			// Collect assistant messages as thinking steps
 			if event.Role == "assistant" && event.Content != "" {
-				streamedContent.WriteString(event.Content)
+				thinkingSteps = append(thinkingSteps, event.Content)
 			}
 		case "result":
 			// Final result - this is the complete response
@@ -135,16 +135,34 @@ func parseStreamOutput(output string) (string, string) {
 		}
 	}
 
-	// Prefer the result event's response, fall back to concatenated streamed content
-	result := finalResult
-	if result == "" {
-		result = streamedContent.String()
-	}
-	if result == "" {
-		result = "✅ Done (no output)"
+	// Build formatted response
+	var result strings.Builder
+
+	// Add thinking section if we have both thinking steps AND a final result
+	// (If no final result, thinking steps ARE the response)
+	if len(thinkingSteps) > 0 && finalResult != "" {
+		result.WriteString("_🧠 Thinking:_\n")
+		for i, step := range thinkingSteps {
+			// Add step number for clarity
+			result.WriteString(fmt.Sprintf("%d. %s\n", i+1, step))
+		}
+		result.WriteString("\n---\n\n")
 	}
 
-	return result, sessionID
+	// Add final response
+	if finalResult != "" {
+		result.WriteString("*📋 Response:*\n")
+		result.WriteString(finalResult)
+	} else if len(thinkingSteps) > 0 {
+		// No final result, so concatenate thinking steps as the response
+		for _, step := range thinkingSteps {
+			result.WriteString(step)
+		}
+	} else {
+		result.WriteString("✅ Done (no output)")
+	}
+
+	return result.String(), sessionID
 }
 
 // GetStartPrompt returns the prompt used for the /start command
