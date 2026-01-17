@@ -1,8 +1,8 @@
 # Obsidian PA
 
-Personal Assistant for Obsidian via Telegram, powered by Claude AI.
+Personal Assistant for Obsidian via Telegram/Slack, powered by Claude AI or Gemini.
 
-Obsidian PA enables you to manage your Obsidian vault through Telegram messages. Send a message to your bot, and Claude AI will read, write, and organize your notes—synced instantly to all your devices via Obsidian Sync.
+Obsidian PA enables you to manage your Obsidian vault through Telegram or Slack messages. Send a message to your bot, and AI will read, write, and organize your notes—synced instantly to all your devices via Obsidian Sync.
 
 ## Features
 
@@ -15,8 +15,8 @@ Obsidian PA enables you to manage your Obsidian vault through Telegram messages.
 
 - Docker and Docker Compose
 - Obsidian Sync subscription (for cross-device sync)
-- Telegram account
-- Anthropic API key
+- Telegram and/or Slack account
+- Anthropic API key (for Claude) or Google account/API key (for Gemini)
 
 ## Quick Start
 
@@ -84,13 +84,26 @@ The bot will respond with the result, and the note will appear in your Obsidian 
 
 ### Environment Variables
 
-#### Shared (Required)
+#### AI Executor
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `ANTHROPIC_API_KEY` | Yes | Anthropic API key from console.anthropic.com |
+| `AI_EXECUTOR` | No | Which AI to use: `claude` or `gemini` (default: `claude`) |
 | `VAULT_PATH` | No | Custom vault path (default: `/config/Obsidian Vault`) |
+
+#### Claude (default)
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `ANTHROPIC_API_KEY` | Yes (for Claude) | Anthropic API key from console.anthropic.com |
 | `CLAUDE_MODEL` | No | Claude model to use (default: `claude-haiku-4-5`) |
+
+#### Gemini
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `GEMINI_API_KEY` | No | Google API key (optional, can use OAuth) |
+| `GEMINI_MODEL` | No | Gemini model to use (default: `auto` - Gemini chooses best model) |
 
 #### Telegram (Optional)
 
@@ -124,10 +137,10 @@ Quick summary:
 
 ### Customizing Claude's Behavior
 
-Create a `CLAUDE.md` file to customize how Claude interacts with your vault. Place it in one of these locations:
+Create an `AGENT.md` file to customize how the AI interacts with your vault. Place it in one of these locations:
 
-1. **In your vault** (syncs via Obsidian Sync): `obsidian_data/<VaultName>/CLAUDE.md`
-2. **In config directory**: `obsidian_data/CLAUDE.md`
+1. **In your vault** (syncs via Obsidian Sync): `obsidian_data/<VaultName>/AGENT.md`
+2. **In config directory**: `obsidian_data/AGENT.md`
 
 Use it to:
 
@@ -155,8 +168,8 @@ See [docs/architecture.md](docs/architecture.md) for detailed system architectur
 
 ```
 ┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-│  Telegram   │────▶│             │────▶│ Claude CLI  │
-│    App      │◀────│   Go Bot     │◀────│   (Brain)   │
+│  Telegram   │────▶│              │────▶│   AI CLI    │
+│    App      │◀────│   Go Bot     │◀────│Claude/Gemini│
 └─────────────┘     │   (Bridge)   │     └─────────────┘
                     │              │            │
 ┌─────────────┐     │              │      ┌─────▼─────┐
@@ -200,15 +213,18 @@ go build -o bot ./src
 obsidian-pa/
 ├── src/                 # Go source files
 │   ├── main.go          # Application entry point
-│   ├── claude.go        # Claude CLI execution logic
 │   ├── telegram.go      # Telegram bot implementation
-│   └── slack.go         # Slack bot implementation
+│   ├── slack.go         # Slack bot implementation
+│   └── executor/        # AI executor package
+│       ├── executor.go  # Executor interface
+│       ├── claude.go    # Claude CLI implementation
+│       └── gemini.go    # Gemini CLI implementation
 ├── go.mod               # Go module definition
 ├── go.sum               # Dependency checksums
 ├── vendor/              # Vendored dependencies
 ├── Dockerfile           # Container build instructions
 ├── docker-compose.yml   # Container orchestration
-├── CLAUDE.md            # Claude agent configuration
+├── AGENT.md             # AI agent configuration
 ├── .env.example         # Environment variable template
 ├── .mise.toml           # Go version management
 ├── docs/                # Documentation

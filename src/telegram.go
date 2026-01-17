@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/gpng/obsidian-pa/src/executor"
 )
 
 // TelegramConfig holds Telegram-specific configuration
@@ -16,14 +17,14 @@ type TelegramConfig struct {
 }
 
 // runTelegramBot starts the Telegram bot and listens for messages
-func runTelegramBot(tgConfig *TelegramConfig, config *Config) {
+func runTelegramBot(tgConfig *TelegramConfig, exec executor.Executor) {
 	// Initialize Telegram bot
 	bot, err := tgbotapi.NewBotAPI(tgConfig.Token)
 	if err != nil {
 		log.Fatalf("Failed to create Telegram bot: %v", err)
 	}
 
-	log.Printf("[Telegram] Authorized on account %s", bot.Self.UserName)
+	log.Printf("[Telegram] Authorized on account %s (using %s)", bot.Self.UserName, exec.Name())
 
 	// Set up updates channel
 	u := tgbotapi.NewUpdate(0)
@@ -77,11 +78,11 @@ func runTelegramBot(tgConfig *TelegramConfig, config *Config) {
 			continue
 		}
 
-		// Handle /start command - Read CLAUDE.md and start daily review
+		// Handle /start command - Read context and start daily review
 		if userMsg == "/start" {
 			// Reset session for a fresh start
 			sessionID = ""
-			log.Println("[Telegram] Starting new session with CLAUDE.md context")
+			log.Printf("[Telegram] Starting new session with %s context", exec.Name())
 
 			// Send processing indicator
 			processingMsg := tgbotapi.NewMessage(chatID, "🌅 Starting your day... Reading context and reviewing tasks...")
@@ -90,8 +91,8 @@ func runTelegramBot(tgConfig *TelegramConfig, config *Config) {
 				log.Printf("[Telegram] Failed to send processing message: %v", err)
 			}
 
-			// Execute Claude CLI with the start prompt
-			response, newSessionID := executeClaude(getStartPrompt(), config, sessionID)
+			// Execute AI CLI with the start prompt
+			response, newSessionID := exec.Execute(exec.GetStartPrompt(), sessionID)
 
 			// Update session ID
 			if newSessionID != "" {
@@ -117,8 +118,8 @@ func runTelegramBot(tgConfig *TelegramConfig, config *Config) {
 			log.Printf("[Telegram] Failed to send processing message: %v", err)
 		}
 
-		// Execute Claude CLI
-		response, newSessionID := executeClaude(userMsg, config, sessionID)
+		// Execute AI CLI
+		response, newSessionID := exec.Execute(userMsg, sessionID)
 
 		// Update session ID if we got a new one
 		if newSessionID != "" {

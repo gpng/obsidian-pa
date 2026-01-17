@@ -69,13 +69,47 @@ Use the Claude Code CLI (`@anthropic-ai/claude-code`) instead of direct API call
 - **Agent Capabilities**: Built-in file operations, search, and editing
 - **Context Awareness**: Automatically includes relevant files
 - **No Tool Implementation**: File read/write/search handled by CLI
-- **CLAUDE.md Support**: Easy customization via markdown file
+- **AGENT.md Support**: Easy customization via markdown file
 - **Battle-tested**: Same tool developers use
 
 **Trade-offs:**
 - External process execution overhead
 - Less control over individual API calls
 - Requires Node.js in container
+
+---
+
+## Why Support Multiple AI Backends?
+
+### Decision
+Support both Claude CLI and Gemini CLI through a common `Executor` interface.
+
+### Rationale
+
+**Why Multiple Backends:**
+- **Flexibility**: Users can choose based on pricing, performance, or preference
+- **Redundancy**: If one service has issues, switch to the other
+- **Future-proofing**: Easy to add more backends (OpenAI, local models, etc.)
+- **Cost optimization**: Gemini offers a generous free tier
+
+**Why an Interface:**
+- **Clean separation**: Bot logic doesn't care which AI it's using
+- **Testability**: Easy to mock for testing
+- **Single code path**: No conditional logic in bot handlers
+
+**Implementation:**
+```go
+type Executor interface {
+    Execute(prompt, sessionID string) (response, newSessionID string)
+    GetStartPrompt() string
+    Name() string
+}
+```
+
+**Trade-offs:**
+- Slightly more complex architecture
+- Each CLI has different capabilities/quirks
+- Must maintain feature parity across backends
 
 ---
 

@@ -1,11 +1,14 @@
-// Package main implements a multi-platform bot that bridges user messages to Claude CLI
-// for managing an Obsidian vault. Supports Telegram and Slack (Socket Mode).
+// Package main implements a multi-platform bot that bridges user messages to AI CLI
+// (Claude or Gemini) for managing an Obsidian vault. Supports Telegram and Slack (Socket Mode).
 package main
 
 import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
+
+	"github.com/gpng/obsidian-pa/src/executor"
 )
 
 // DefaultVaultPath is the default path to the Obsidian vault in the container
@@ -14,26 +17,55 @@ const DefaultVaultPath = "/config/Obsidian Vault"
 // DefaultClaudeModel is the default Claude model to use
 const DefaultClaudeModel = "claude-haiku-4-5"
 
+// DefaultGeminiModel is the default Gemini model to use (auto = let Gemini CLI choose)
+const DefaultGeminiModel = "auto"
+
 func main() {
-	// Load shared configuration
-	anthropicKey := os.Getenv("ANTHROPIC_API_KEY")
+	// Determine which AI executor to use (default: claude)
+	executorType := strings.ToLower(os.Getenv("AI_EXECUTOR"))
+	if executorType == "" {
+		executorType = "claude" // Default to Claude for backward compatibility
+	}
+
+	// Load vault path (shared across executors)
 	vaultPath := os.Getenv("VAULT_PATH")
 	if vaultPath == "" {
 		vaultPath = DefaultVaultPath
 	}
-	claudeModel := os.Getenv("CLAUDE_MODEL")
-	if claudeModel == "" {
-		claudeModel = DefaultClaudeModel
-	}
 
-	if anthropicKey == "" {
-		log.Fatal("ANTHROPIC_API_KEY environment variable is required")
-	}
+	// Create the appropriate executor
+	var exec executor.Executor
+	switch executorType {
+	case "gemini":
+		apiKey := os.Getenv("GEMINI_API_KEY") // Optional - can use OAuth
+		model := os.Getenv("GEMINI_MODEL")
+		if model == "" {
+			model = DefaultGeminiModel
+		}
+		exec = executor.NewGemini(&executor.Config{
+			APIKey:    apiKey,
+			VaultPath: vaultPath,
+			Model:     model,
+		})
+		log.Printf("Using Gemini executor with model: %s", model)
 
-	config := &Config{
-		AnthropicKey: anthropicKey,
-		VaultPath:    vaultPath,
-		ClaudeModel:  claudeModel,
+	case "claude":
+		fallthrough
+	default:
+		apiKey := os.Getenv("ANTHROPIC_API_KEY")
+		if apiKey == "" {
+			log.Fatal("ANTHROPIC_API_KEY environment variable is required for Claude executor")
+		}
+		model := os.Getenv("CLAUDE_MODEL")
+		if model == "" {
+			model = DefaultClaudeModel
+		}
+		exec = executor.NewClaude(&executor.Config{
+			APIKey:    apiKey,
+			VaultPath: vaultPath,
+			Model:     model,
+		})
+		log.Printf("Using Claude executor with model: %s", model)
 	}
 
 	// Load Telegram configuration (optional)
@@ -76,15 +108,14 @@ func main() {
 	// Start enabled platforms
 	if telegramEnabled {
 		log.Println("Starting Telegram bot...")
-		go runTelegramBot(telegramConfig, config)
+		go runTelegramBot(telegramConfig, exec)
 	}
 
 	if slackEnabled {
 		log.Println("Starting Slack bot (Socket Mode)...")
-		go runSlackBot(slackConfig, config)
+		go runSlackBot(slackConfig, exec)
 	}
 
 	// Block forever
 	select {}
 }
-

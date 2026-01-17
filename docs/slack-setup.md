@@ -124,7 +124,7 @@ Send these as DMs to the bot:
 
 | Command | Description |
 |---------|-------------|
-| `start` | Read CLAUDE.md and start daily review |
+| `start` | Read AGENT.md and start daily review |
 | `status` | Check if there's an active session |
 | `reset` | Clear session and start fresh |
 
