@@ -10,9 +10,15 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Asia/Singapore
-      # Application settings (loaded from .env file)
-      - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
+      # AI Executor selection (claude or gemini, defaults to claude)
+      - AI_EXECUTOR=${AI_EXECUTOR}
+      # Claude settings
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - CLAUDE_MODEL=${CLAUDE_MODEL}
+      # Gemini settings (uses OAuth by default, no API key needed)
+      - GEMINI_MODEL=${GEMINI_MODEL}
+      # Telegram bot settings (optional)
+      - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
       - ALLOWED_TELEGRAM_USER_ID=${ALLOWED_TELEGRAM_USER_ID}
       # Slack bot settings (optional, Socket Mode)
       - SLACK_APP_TOKEN=${SLACK_APP_TOKEN}
