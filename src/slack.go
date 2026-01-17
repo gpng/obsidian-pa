@@ -205,8 +205,8 @@ func deleteSlackMessage(api *slack.Client, channelID, timestamp string) {
 
 // sendSlackResponse sends a response to Slack, splitting it if necessary for readability
 func sendSlackResponse(api *slack.Client, channelID, response string) {
-	// Slack allows 40K chars, but split at 4000 for readability
-	const maxLength = 4000
+	// Slack section blocks have a 3000 char limit for text
+	const maxLength = 3000
 
 	// Split response if too long
 	for len(response) > 0 {
@@ -223,9 +223,14 @@ func sendSlackResponse(api *slack.Client, channelID, response string) {
 			response = ""
 		}
 
+		// Use blocks with mrkdwn for proper formatting
+		textBlock := slack.NewTextBlockObject("mrkdwn", chunk, false, false)
+		section := slack.NewSectionBlock(textBlock, nil, nil)
+
 		_, _, err := api.PostMessage(
 			channelID,
-			slack.MsgOptionText(chunk, false),
+			slack.MsgOptionBlocks(section),
+			slack.MsgOptionText(chunk, false), // Fallback for notifications
 		)
 		if err != nil {
 			log.Printf("[Slack] Failed to send response: %v", err)

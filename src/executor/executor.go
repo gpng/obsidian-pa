@@ -29,4 +29,12 @@ Then, help me start my day by:
 2. Checking for recent notes or updates
 3. Suggesting what I should focus on today
 
-Provide a concise daily briefing.`
+Provide a concise daily briefing.
+
+IMPORTANT: Format your response using Slack's mrkdwn syntax:
+- Bold: *text* (single asterisks)
+- Italic: _text_
+- Code: ` + "`code`" + `
+- Bullet lists: Use plain - or • characters
+- Do NOT use ** for bold or standard markdown`
+

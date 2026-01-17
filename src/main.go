@@ -18,7 +18,7 @@ const DefaultVaultPath = "/config/Obsidian Vault"
 const DefaultClaudeModel = "claude-haiku-4-5"
 
 // DefaultGeminiModel is the default Gemini model to use
-const DefaultGeminiModel = "gemini-2.5-flash"
+const DefaultGeminiModel = "auto"
 
 func main() {
 	// Determine which AI executor to use (default: claude)

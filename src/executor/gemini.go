@@ -81,9 +81,11 @@ func (g *Gemini) Execute(prompt string, sessionID string) (string, string) {
 }
 
 // parseStreamOutput parses newline-delimited JSON events from Gemini CLI
+// Returns only the final response, not intermediate chain-of-thought reasoning
 func parseStreamOutput(output string) (string, string) {
 	var sessionID string
-	var responseContent strings.Builder
+	var lastAssistantMessage string
+	var finalResult string
 
 	scanner := bufio.NewScanner(strings.NewReader(output))
 	for scanner.Scan() {
@@ -103,14 +105,14 @@ func parseStreamOutput(output string) (string, string) {
 			// Capture session ID from init event
 			sessionID = event.SessionID
 		case "message":
-			// Capture assistant responses
+			// Keep track of the last assistant message (final one is usually the response)
 			if event.Role == "assistant" && event.Content != "" {
-				responseContent.WriteString(event.Content)
+				lastAssistantMessage = event.Content
 			}
 		case "result":
-			// Final result - may contain the complete response
+			// Final result - this is what we want
 			if event.Response != "" {
-				return event.Response, sessionID
+				finalResult = event.Response
 			}
 		case "error":
 			// Handle errors
@@ -124,7 +126,11 @@ func parseStreamOutput(output string) (string, string) {
 		}
 	}
 
-	result := responseContent.String()
+	// Prefer the result event's response, fall back to last assistant message
+	result := finalResult
+	if result == "" {
+		result = lastAssistantMessage
+	}
 	if result == "" {
 		result = "✅ Done (no output)"
 	}
